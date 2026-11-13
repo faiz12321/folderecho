@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FolderEcho</title>
+<style>
+:root{--bg:#0b0d10;--panel:#14181d;--panel2:#1b2128;--line:#2a333d;--text:#f4f6f8;--mute:#a3adb9;--acc:#5eead4;--acc-ink:#04201c;--a:#60a5fa;--b:#f472b6;--same:#4ade80;--diff:#fbbf24;--move:#c084fc;--ok:#4ade80;--bad:#ff8f8f;--amber:#5eead4;--amber2:#5eead4}
+*{box-sizing:border-box}
+html{font-size:18px}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;line-height:1.5}
+.wrap{max-width:1000px;margin:0 auto;padding:18px 18px 120px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--a),var(--b));flex:none}
+.brand b{font-size:1.15rem}
+h1{font-size:2.1rem;line-height:1.1;margin:.3em 0 .25em;letter-spacing:-.5px}
+h2{font-size:1.4rem;margin:1.2em 0 .4em}
+.sub{color:var(--mute);margin:.2em 0 1.2em;font-size:1.05rem}
+.demo{background:#1c1a0c;border:1px solid var(--diff);border-radius:14px;padding:10px 14px;margin:10px 0;font-size:.95rem}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:4;display:flex;background:rgba(14,17,21,.94);border-top:1px solid var(--line);padding:6px 6px calc(10px + env(safe-area-inset-bottom));backdrop-filter:blur(8px)}
+.tab{flex:1;background:none;border:0;color:var(--mute);font:inherit;font-size:.78rem;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;min-height:56px;border-radius:12px;padding:6px 2px}
+.tab svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tab[aria-selected=true]{color:var(--acc);font-weight:700}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px;margin:14px 0}
+label{display:block;color:var(--mute);font-size:.8rem;text-transform:uppercase;letter-spacing:1.4px;font-weight:700;margin:14px 0 6px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+section.card{background:none;border:0;padding:0;margin:8px 0}
+.pickcard{border-left:6px solid var(--a);background:var(--panel2);border-radius:16px;padding:6px 14px 14px;margin:12px 0}
+.pickcard.b{border-left-color:var(--b)}
+input[type=text]{flex:1 1 170px;min-width:0;width:100%;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px;font:inherit;font-size:1rem;min-height:50px}
+button{font:inherit;cursor:pointer;min-height:48px;border-radius:14px;padding:8px 16px;border:1px solid var(--line);background:var(--panel2);color:var(--text)}
+button.primary{background:var(--acc);color:var(--acc-ink);border-color:var(--acc);font-weight:800;font-size:1.1rem;min-height:56px;padding:10px 22px}
+button.primary:disabled{opacity:.45;cursor:not-allowed}
+button.danger{background:#4a1d1d;border-color:var(--bad)}
+#go-compare,#go-dupes{width:100%}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+select{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px;font:inherit;font-size:1rem;min-height:50px;max-width:100%;width:100%}
+.safe{display:flex;gap:10px;align-items:flex-start;background:#0f1f1c;border:1px solid #1f4a42;color:#a7f3e6;border-radius:14px;padding:12px 14px;margin-top:14px;font-size:.95rem}
+.bar{height:14px;background:var(--bg);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:8px 0}
+.bar>div{height:100%;background:var(--acc);width:0}
+.sumbar{display:flex;height:22px;border-radius:12px;overflow:hidden;gap:3px;margin:14px 0 12px}
+.sumbar div{height:100%;min-width:4px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+.stat b{font-size:2rem;line-height:1.1;display:block;color:var(--acc)}
+.stat span{color:var(--mute);font-size:.9rem}
+.stat.c0 b{color:var(--same)}.stat.c1 b{color:var(--a)}.stat.c2 b{color:var(--b)}.stat.c3 b{color:var(--diff)}.stat.c4 b{color:var(--move)}
+details{background:var(--panel2);border-radius:14px;padding:8px 14px;margin:10px 0;border:1px solid var(--line)}
+summary{cursor:pointer;min-height:40px;padding:6px 0;font-weight:600}
+.path{font-family:Consolas,"DejaVu Sans Mono",monospace;font-size:.82rem;overflow-wrap:anywhere;word-break:break-word;padding:3px 0}
+.chip{display:inline-block;font-family:"Segoe UI",system-ui,sans-serif;font-size:.7rem;font-weight:800;padding:2px 9px;border-radius:99px;margin-right:6px;letter-spacing:.5px;vertical-align:1px}
+.chip.keepc{background:#12301f;color:var(--same)}.chip.movec{background:#2a1a3d;color:var(--move)}
+.keep{color:var(--ok)}
+.err{color:var(--bad);border:1px solid var(--bad);border-radius:14px;padding:12px;margin:10px 0}
+.ok{color:var(--ok)}
+.mute{color:var(--mute)}
+.grp{border-top:1px solid var(--line);padding:12px 0}
+.extra{display:flex;gap:12px;align-items:flex-start;padding:8px 0;min-height:48px;text-transform:none;letter-spacing:0;font-size:inherit;font-weight:400;color:var(--text);margin:0}
+.extra input{width:26px;height:26px;margin-top:0;flex:none;accent-color:#c084fc}
+.stickybar{position:sticky;bottom:84px;z-index:3;margin-top:14px}
+.stickybar button{width:100%;box-shadow:0 10px 30px rgba(0,0,0,.6);background:var(--move);border-color:var(--move);color:#1b0b2e;font-weight:800;font-size:1.1rem;min-height:58px}
+.stickybar button:disabled{opacity:.45}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:12px;z-index:6}
+.modal.on{display:flex}
+.modal .box{background:var(--panel);border:1px solid var(--acc);border-radius:20px;padding:18px;max-width:640px;width:100%;max-height:88vh;overflow:auto}
+.dir{display:block;width:100%;text-align:left;margin:5px 0}
+.small{font-size:.85rem}
+@media(min-width:900px){h1{font-size:2.6rem}.wrap{padding-bottom:110px}.pairrow{display:grid;grid-template-columns:1fr 1fr;gap:14px}.pairrow .pickcard{margin:0}}
+@media(max-width:480px){html{font-size:17px}.wrap{padding:14px 14px 120px}}
+</style></head>
+<body><div class="wrap">
+<div class="brand"><div class="logo"></div><b>FolderEcho</b></div>
+<h1 id="h-title">Compare two folders</h1>
+<p class="sub" id="h-sub">See what matches, what is missing, and what changed. Nothing is touched.</p>
+<div id="demo" class="demo" hidden><b>Demo.</b> Made-up files, shown as if on your computer. This page cannot touch any real file. The real app runs on your own PC.</div>
+<div class="tabs" role="tablist">
+<button class="tab" role="tab" id="t-compare" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>Compare</button>
+<button class="tab" role="tab" id="t-dupes" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>Duplicates</button>
+<button class="tab" role="tab" id="t-undo" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>Undo</button>
+<button class="tab" role="tab" id="t-about" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>About</button>
+</div>
+
+
+<section id="p-compare" class="card">
+<div class="pairrow"><div class="pickcard"><label for="ca">Folder A</label><div class="row"><input type="text" id="ca" placeholder="Full folder path"><button data-pick="ca">Browse</button></div></div>
+<div class="pickcard b"><label for="cb">Folder B</label><div class="row"><input type="text" id="cb" placeholder="Full folder path"><button data-pick="cb">Browse</button></div></div></div>
+<p><button class="primary" id="go-compare">Compare</button></p>
+<div class="safe"><span>Read only. Comparing never changes your files.</span></div>
+</section>
+
+
+<section id="p-dupes" class="card" hidden>
+<div class="mute">Finds files with exactly the same content (a SHA-256 fingerprint of the whole file), even if the names differ. First you see a preview.</div>
+<div id="dfolders"></div>
+<p><button id="add-folder">Add another folder</button></p>
+<label for="master">Master folder: never touched (optional)</label>
+<select id="master"><option value="">None: keep one copy of each, move the others</option></select>
+<p><button class="primary" id="go-dupes">Find duplicates</button></p>
+</section>
+
+
+<section id="p-undo" class="card" hidden>
+<div class="mute">Put moved files back where they were. Files that changed, or places that are now taken, are left alone and listed.</div>
+<label for="uh">Holding folder</label><div class="row"><input type="text" id="uh" placeholder="Full path of the holding folder"><button data-pick="uh">Browse</button></div>
+<p><button id="go-runs">Show earlier moves</button></p>
+<div id="runs"></div>
+</section>
+
+
+<section id="p-about" class="card" hidden>
+<h2>What it does and does not do</h2>
+<ul>
+<li>Files match only if their full content is identical (SHA-256). Names and dates are not used to decide.</li>
+<li>Nothing is deleted. Duplicates move to a holding folder on the same drive. Free space only comes back when you later delete that folder yourself.</li>
+<li>Skipped and listed: shortcuts and links, hidden and system files, files with several names (hardlinks), unreadable files, and empty files.</li>
+<li>Not allowed: whole drives, system and program folders, your user folder itself, and cloud-synced folders (OneDrive, Dropbox, Google Drive, iCloud and similar). The same rules apply to the holding folder, so moved files are never uploaded to a sync service. This is a name-based safety check and can miss unusual setups, so only use ordinary local folders.</li>
+<li>Right before each move, both files are checked again. A file that changed since the preview is not moved.</li>
+<li>Do not edit or sync the folders while it runs. Many moves are not one all-or-nothing step: if a move is interrupted, Undo still works from the saved journal.</li>
+<li>Undo never overwrites. Empty folders may stay behind after Undo.</li>
+<li>Large folders take time because every candidate file is read in full.</li>
+<li>External drives: duplicates are moved on the same drive as each file (never copied between drives). Only simulated tests so far, not real USB drives or network shares. Try a small test folder first. Undo needs the drive to keep the same letter.</li>
+<li>Free and open source (MIT license). Provided as is, with no warranty. Keep your own backups of anything important.</li>
+</ul>
+</section>
+
+
+<div id="status"></div>
+<div id="out"></div>
+
+
+<div class="modal" id="m-pick"><div class="box" role="dialog" aria-modal="true" aria-label="Choose a folder">
+<div class="path" id="pk-path"></div>
+<div id="pk-list"></div>
+<div class="row" style="margin-top:10px"><button id="pk-up">Up one level</button><button class="primary" id="pk-use">Use this folder</button><button id="pk-cancel">Cancel</button></div>
+</div></div>
+
+
+<div class="modal" id="m-confirm"><div class="box" role="dialog" aria-modal="true" aria-label="Confirm move">
+<h2 id="cf-title">Move these files?</h2><div id="cf-body"></div>
+<div class="row" style="margin-top:10px"><button class="primary" id="cf-yes">Move to holding folder</button><button id="cf-no">Cancel</button></div>
+</div></div>
+
+
+<script>
+const TOKEN="__TOKEN__";
+const DEMO=window.__DEMO__||null;
+const $=s=>document.querySelector(s);
+const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!==undefined)e.textContent=x;return e};
+const human=n=>{const u=["B","KB","MB","GB","TB"];let i=0;while(n>=1024&&i<4){n/=1024;i++}return (i?n.toFixed(1):n.toFixed(0))+" "+u[i]};
+let demoState={moved:false};
+
+
+async function api(path,body){
+  if(DEMO)return demoApi(path,body||{});
+  const r=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json","X-Token":TOKEN},body:JSON.stringify(body||{})});
+  return r.json();
+}
+function demoApi(path,b){
+  return new Promise(res=>setTimeout(()=>{
+    if(path==="/api/browse"){const t=DEMO.tree[b.path||""];return res(t||{error:"Cannot open that folder."})}
+    if(path==="/api/start"){demoState.kind=b.kind;demoState.t=0;return res({started:true})}
+    if(path==="/api/job"){demoState.t++;
+      if(demoState.t<3)return res({job:{status:"running",progress:{stage:demoState.t<2?"scan":"hash",done:demoState.t*120,total:demoState.t<2?null:360},result:null,error:null}});
+      return res({job:{status:"done",progress:{},result:demoState.kind==="compare"?DEMO.compare:DEMO.dupes,error:null}})}
+    if(path==="/api/apply"){demoState.moved=true;return res({moved:b.selected.length,bytes:DEMO.dupes.groups.reduce((a,g)=>a+g.extras.filter(x=>b.selected.includes(x.abs)).length*g.size,0),run:DEMO.run,skipped:[]})}
+    if(path==="/api/runs")return res({runs:demoState.moved?[DEMO.run]:[]});
+    if(path==="/api/undo"){return res({restored:DEMO.dupes.extra_count,conflicts:[]})}
+    res({error:"Not available in the demo."})
+  },180));
+}
+
+
+// tabs
+const tabs=["compare","dupes","undo","about"];
+const TTL={compare:["Compare two folders","See what matches, what is missing, and what changed. Nothing is touched."],dupes:["Find duplicates","Pick one master folder to keep. Extra copies move to a holding folder. Nothing is deleted."],undo:["Undo","Put moved files back where they were."],about:["About and limits","What it does, and what it does not."]};
+function show(name){$("#h-title").textContent=TTL[name][0];$("#h-sub").textContent=TTL[name][1];tabs.forEach(t=>{$("#p-"+t).hidden=t!==name;$("#t-"+t).setAttribute("aria-selected",t===name)});$("#out").replaceChildren();$("#status").replaceChildren()}
+tabs.forEach(t=>$("#t-"+t).onclick=()=>show(t));
+if(DEMO){$("#demo").hidden=false;$("#ca").value=DEMO.a;$("#cb").value=DEMO.b;}
+
+
+// dupes folder rows
+let drows=[];
+function addRow(v){const w=el("div","row");const i=el("input");i.type="text";i.placeholder="Full folder path";i.setAttribute("aria-label","Folder "+(drows.length+1));if(v)i.value=v;
+ const b=el("button",null,"Browse");b.onclick=()=>pick(i);const rm=el("button",null,"Remove");rm.onclick=()=>{if(drows.length>1){w.remove();drows=drows.filter(x=>x!==i);refreshMaster()}};
+ i.oninput=refreshMaster;w.append(i,b,rm);$("#dfolders").append(w);drows.push(i);refreshMaster()}
+function refreshMaster(){const s=$("#master"),cur=s.value;s.replaceChildren(new Option("None: keep one copy of each, move the others",""));
+ drows.map(i=>i.value.trim()).filter(Boolean).forEach(v=>s.append(new Option(v,v)));s.value=[...s.options].some(o=>o.value===cur)?cur:""}
+$("#add-folder").onclick=()=>{if(drows.length<4)addRow("")};
+addRow(DEMO?DEMO.a:"");addRow(DEMO?DEMO.b:"");
+if(DEMO){setTimeout(()=>{$("#master").value=DEMO.b;},0)}
+
+
+// folder picker
+let pkTarget=null,pkCur="";
+async function pick(input){pkTarget=input;$("#m-pick").classList.add("on");await load(input.value.trim()&&!DEMO?input.value.trim():"")}
+document.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>pick($("#"+b.dataset.pick)));
+async function load(p){const r=await api("/api/browse",{path:p});const L=$("#pk-list");L.replaceChildren();
+ if(r.error){L.append(el("div","err",r.error));if(p)return load("");return}
+ pkCur=r.path;parkParent=r.parent;$("#pk-path").textContent=r.path||"Choose a drive or location";
+ r.dirs.forEach(d=>{const b=el("button","dir path",d.name);b.onclick=()=>load(d.path);L.append(b)});
+ if(!r.dirs.length)L.append(el("div","mute","No folders in here."))}
+let parkParent=null;
+$("#pk-up").onclick=()=>{if(pkCur)load(parkParent||"")};
+$("#pk-use").onclick=()=>{if(pkCur&&pkTarget){pkTarget.value=pkCur;pkTarget.dispatchEvent(new Event("input"))}$("#m-pick").classList.remove("on")};
+$("#pk-cancel").onclick=()=>$("#m-pick").classList.remove("on");
+
+
+// job runner
+function setStatus(txt,cls){const s=$("#status");s.replaceChildren();if(txt){s.append(el("div",cls||"card",txt))}}
+async function run(kind,body){
+ $("#out").replaceChildren();setStatus("Starting...");
+ const r=await api("/api/start",Object.assign({kind},body));
+ if(r.error){setStatus(r.error,"err");return null}
+ const box=el("div","card");const label=el("div",null,"Working...");const bar=el("div","bar");const fill=el("div");bar.append(fill);
+ const stop=el("button",null,"Stop");stop.onclick=()=>api("/api/cancel",{});box.append(label,bar,stop);$("#status").replaceChildren(box);
+ for(;;){await new Promise(r=>setTimeout(r,DEMO?200:500));const j=(await api("/api/job",{})).job;if(!j)return null;
+  if(j.status==="running"){const p=j.progress||{};label.textContent=p.stage==="scan"?`Looking at folders... ${p.done||0} files so far`:p.stage==="hash"?`Reading files to compare content... ${p.done}/${p.total}`:"Working...";fill.style.width=p.total?Math.round(100*p.done/p.total)+"%":"15%";continue}
+  setStatus("");if(j.status==="error"){setStatus(j.error,"err");return null}return j.result}
+}
+function list(title,items,fmt,open){const d=el("details");if(open)d.open=true;d.append(el("summary",null,`${title} (${items.length})`));
+ if(!items.length){d.append(el("div","mute small","None."))}
+ items.slice(0,500).forEach(x=>d.append(el("div","path",fmt?fmt(x):x)));if(items.length>500)d.append(el("div","mute small",`...and ${items.length-500} more not shown.`));return d}
+function skippedBlock(r){if(!(r.skipped.length||r.errors.length||r.hidden_skipped))return null;
+ const d=el("details");d.append(el("summary",null,"Left out of the check ("+(r.skipped.length+r.errors.length+(r.hidden_skipped?1:0))+")"));
+ if(r.hidden_skipped)d.append(el("div","small",r.hidden_skipped+" hidden or system files were not looked at."));
+ r.skipped.concat(r.errors).slice(0,300).forEach(x=>d.append(el("div","path small",x[0]+": "+x[1])));return d}
+
+
+// compare
+$("#go-compare").onclick=async()=>{const r=await run("compare",{a:$("#ca").value,b:$("#cb").value});if(!r)return;const o=$("#out");o.replaceChildren();
+ const c=el("div","card");const st=el("div","stats");
+ [["Same in both",r.same.length],["Only in A",r.only_in_a.length],["Only in B",r.only_in_b.length],["Name matches, content differs",r.different.length],["Same content, different place",r.same_content_elsewhere.length]].forEach(([k,v])=>{const s=el("div","stat c"+st.children.length);s.append(el("b",null,String(v)),el("span","small",k));st.append(s)});
+ const sb=el("div","sumbar");sb.setAttribute("aria-hidden","true");["same","a","b","diff","move"].forEach((col,i)=>{const n=[r.same.length,r.only_in_a.length,r.only_in_b.length,r.different.length,r.same_content_elsewhere.length][i];if(n){const d=el("div");d.style.flex=String(n);d.style.background="var(--"+col+")";sb.append(d)}});
+ c.append(el("div","mute small",`A: ${r.counts.a} files. B: ${r.counts.b} files. Nothing was changed.`),sb,st,
+  list("Only in A (missing from B)",r.only_in_a,null,true),list("Only in B (missing from A)",r.only_in_b),
+  list("Same name, different content",r.different,x=>x[0]+"  ["+x[2]+"]",true),
+  list("Same content, different place",r.same_content_elsewhere,x=>"A: "+x[0]+"   =   B: "+x[1].join(", ")),
+  list("Same in both",r.same));const sk=skippedBlock(r);if(sk)c.append(sk);o.append(c);o.scrollIntoView({behavior:"smooth"})};
+
+
+// dupes
+$("#go-dupes").onclick=async()=>{const folders=drows.map(i=>i.value.trim()).filter(Boolean);
+ const r=await run("dupes",{folders,master:$("#master").value||null});if(!r)return;renderDupes(r)};
+function renderDupes(r){const o=$("#out");o.replaceChildren();const c=el("div","card");
+ const st=el("div","stats");[["Files checked",r.file_count],["Duplicate groups",r.groups.length],["Extra copies",r.extra_count],["Space they use",human(r.reclaimable_bytes)]].forEach(([k,v])=>{const s=el("div","stat");s.append(el("b",null,String(v)),el("span","small",k));st.append(s)});
+ c.append(st);if(r.master)c.append(el("p","small","Master folder, never touched: "+r.master));
+ if(r.empty_files)c.append(el("p","mute small",r.empty_files+" empty files were not treated as duplicates."));
+ if(!r.groups.length){c.append(el("p","ok","No exact duplicates found."));const sk=skippedBlock(r);if(sk)c.append(sk);o.append(c);return}
+ c.append(el("p",null,"Tick the extra copies to move. The copy marked KEEP stays where it is."));
+ const row=el("div","row");const all=el("button",null,"Select all"),none=el("button",null,"Select none");row.append(all,none);c.append(row);
+ const boxes=[];const cnt=el("p","small mute");
+ r.groups.slice(0,300).forEach(g=>{const d=el("div","grp");const k=el("div","path keep");k.append(el("span","chip keepc","KEEP")," "+g.keep.abs);d.append(k,el("div","small mute",human(g.size)+" each, identical content"));
+  g.extras.forEach(x=>{const w=el("label","extra");const cb=el("input");cb.type="checkbox";cb.checked=true;cb.value=x.abs;cb.onchange=upd;boxes.push(cb);const sp=el("span","path");sp.append(el("span","chip movec","MOVE")," "+x.abs);w.append(cb,sp);d.append(w)});c.append(d)});
+ if(r.groups.length>300)c.append(el("p","mute small",`Showing the 300 largest groups of ${r.groups.length}. Only shown files can be moved.`));
+ function upd(){const n=boxes.filter(b=>b.checked).length;cnt.textContent=n+" files selected";mv.disabled=!n}
+ all.onclick=()=>{boxes.forEach(b=>b.checked=true);upd()};none.onclick=()=>{boxes.forEach(b=>b.checked=false);upd()};
+ const hl=el("label",null,"Holding folder (optional). Leave empty to use a folder named 'FolderEcho holding' next to the first folder. It must be on the same drive.");const hi=el("input");hi.type="text";hi.placeholder="Automatic";hi.setAttribute("aria-label","Holding folder");
+ const mv=el("button","primary","Move selected files to the holding folder");
+ mv.onclick=()=>confirmMove(boxes.filter(b=>b.checked).map(b=>b.value),hi.value.trim(),r);
+ const sbx=el("div","stickybar");sbx.append(mv);c.append(cnt,hl,hi,el("p"),sbx);const sk=skippedBlock(r);if(sk)c.append(sk);o.append(c);upd()}
+function confirmMove(sel,hold,r){const b=$("#cf-body");b.replaceChildren(el("p",null,`${sel.length} files will be moved into a holding folder. Nothing is deleted, and you can undo this.`),el("p","small mute","Each file is checked again right before it moves. A file that changed since the preview is left where it is."));
+ $("#m-confirm").classList.add("on");$("#cf-no").onclick=()=>$("#m-confirm").classList.remove("on");
+ $("#cf-yes").onclick=async()=>{$("#m-confirm").classList.remove("on");setStatus("Moving...");const x=await api("/api/apply",{selected:sel,holding:hold||null});setStatus("");
+  const o=$("#out");o.replaceChildren();const c=el("div","card");if(x.error){c.append(el("div","err",x.error));o.append(c);return}
+  c.append(el("h2",null,"Done"),el("p","ok",`Moved ${x.moved} files (${human(x.bytes)}) to the holding folder.`));(x.runs||[x.run]).forEach(r=>c.append(el("div","path small",r)));
+  if(x.skipped.length){const d=el("details");d.open=true;d.append(el("summary",null,"Not moved ("+x.skipped.length+")"));x.skipped.forEach(s=>d.append(el("div","path small",s[0]+": "+s[1])));c.append(d)}
+  c.append(el("p","small mute","Disk space is not freed until you delete the holding folder yourself. Do that only when you are sure."));
+  const u=el("button",null,"Undo: put everything back");u.onclick=()=>doUndo(x.runs||[x.run]);c.append(u);o.append(c)}}
+
+
+// undo
+async function doUndo(runs){runs=[].concat(runs);setStatus("Putting files back...");let x={restored:0,conflicts:[]};
+ for(const run of runs){const y=await api("/api/undo",{run});if(y.error){x={error:y.error};break}x.restored+=y.restored;x.conflicts=x.conflicts.concat(y.conflicts)}
+ setStatus("");const o=$("#out");o.replaceChildren();const c=el("div","card");
+ if(x.error){c.append(el("div","err",x.error));o.append(c);return}
+ c.append(el("h2",null,"Undo finished"),el("p","ok",`Put back ${x.restored} files.`));
+ if(x.conflicts.length){const d=el("details");d.open=true;d.append(el("summary",null,"Left alone ("+x.conflicts.length+")"));x.conflicts.forEach(s=>d.append(el("div","path small",s[0]+": "+s[1])));c.append(d)}
+ o.append(c)}
+$("#go-runs").onclick=async()=>{const r=await api("/api/runs",{holding:$("#uh").value.trim()});const R=$("#runs");R.replaceChildren();
+ if(r.error){R.append(el("div","err",r.error));return}
+ if(!r.runs.length){R.append(el("p","mute","No earlier moves found there."));return}
+ r.runs.forEach(p=>{const w=el("div","grp");w.append(el("div","path small",p));const b=el("button",null,"Undo this move");b.onclick=()=>doUndo(p);w.append(b);R.append(w)})};
+if(DEMO)$("#uh").value=DEMO.holding;
+</script></div></body></html>
+
