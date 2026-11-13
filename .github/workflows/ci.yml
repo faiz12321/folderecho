@@ -1,0 +1,69 @@
+name: tests
+on: [push, workflow_dispatch]
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      FOLDERECHO_TEST_TMP: ${{ github.workspace }}/tmp-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test-only helper (never shipped)
+        run: python -m pip install websocket-client
+      - name: Prepare scratch folder
+        shell: python
+        run: |
+          import os; os.makedirs(os.environ["FOLDERECHO_TEST_TMP"], exist_ok=True)
+      - name: Unit, safety and window tests
+        shell: bash
+        run: |
+          python -m unittest discover -s tests -v > test-out.txt 2>&1
+          rc=$?
+          { echo "### Tests on ${{ matrix.os }}"; echo '```'; grep -E "^Ran |^OK|^FAILED" test-out.txt; echo; grep -E "skipped" test-out.txt | cut -c1-160; echo; grep -iE "junction|long|reserved|trailing" test-out.txt | cut -c1-160; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          tail -60 test-out.txt
+          exit $rc
+      - name: Smoke test from source
+        run: python tests/smoke_exe.py "python run.py"
+  build-windows:
+    needs: test
+    runs-on: windows-latest
+    env:
+      FOLDERECHO_TEST_TMP: ${{ github.workspace }}/tmp-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build FolderEcho.exe
+        run: |
+          python -m pip install pyinstaller
+          pyinstaller --onefile --name FolderEcho --exclude-module tkinter --add-data "folderecho/ui.html;folderecho" run.py
+      - name: List what is inside the exe
+        run: |
+          python -m PyInstaller.utils.cliutils.archive_viewer -l -r dist/FolderEcho.exe
+      - name: Smoke test the exe
+        shell: python
+        run: |
+          import os, subprocess, sys
+          os.makedirs(os.environ["FOLDERECHO_TEST_TMP"], exist_ok=True)
+          sys.exit(subprocess.call([sys.executable, "tests/smoke_exe.py", os.path.abspath(r"dist\FolderEcho.exe")]))
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path pkg | Out-Null
+          Copy-Item dist\FolderEcho.exe pkg\
+          Copy-Item README.md, LICENSE, THIRD-PARTY.md pkg\
+          Copy-Item licenses\PSF-LICENSE.txt pkg\
+          (Get-FileHash dist\FolderEcho.exe -Algorithm SHA256).Hash | Out-File pkg\FolderEcho.exe.sha256.txt -Encoding ascii
+          Compress-Archive -Path pkg\* -DestinationPath FolderEcho-windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FolderEcho-windows
+          path: FolderEcho-windows.zip
+
