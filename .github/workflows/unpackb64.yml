@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   actions: write
+  workflows: write
 jobs:
   unpack:
     runs-on: ubuntu-latest
